@@ -6,7 +6,7 @@ import {
   validatorChangePassword,
   validatorResetPassword,
 } from '@validation/auth.validation';
-import authMiddleware from '@middleware/auth';
+import {authMiddleware} from '@middleware';
 import { UserController } from '@controller';
 
 router.post('/login', validatorLogin, AuthController.login);
