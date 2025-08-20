@@ -5,7 +5,7 @@ import {
   validatorLogin,
   validatorChangePassword,
   validatorResetPassword,
-} from '@validation/auth.validation';
+} from '@validation';
 import {authMiddleware} from '@middleware';
 import { UserController } from '@controller';
 
