@@ -24,7 +24,7 @@
     "@service": "dist/service",
     "@controller": "dist/controller",
     "@socket": "dist/socket",
-     "@validation": "dist/validation" 
+    "@validation": "dist/validation"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -40,6 +40,8 @@
     "module-alias": "^2.2.2",
     "mysql2": "^3.14.2",
     "nodemailer": "^7.0.5",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
     "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.7",
     "sequelize-typescript": "^2.1.6",
