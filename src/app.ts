@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import body_parser from 'body-parser';
-import morgan from 'morgan';
 import { connectDatabase } from '@models/connect';
 import { errorMiddleware } from '@middleware';
 import route from '@router';
@@ -16,7 +15,6 @@ const server = http.createServer(app);
 // --- Middleware cơ bản
 app.use(express.json());
 app.use(body_parser.json({ limit: '50mb' }));
-app.use(morgan('combined'));
 app.use(cookieParser());
 app.use(cors({
   origin: process.env.APP_ORIGIN || 'http://localhost:5173',
