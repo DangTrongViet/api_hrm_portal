@@ -11,13 +11,13 @@ export const seed = async () => {
   const adminPass = await bcrypt.hash("123456", 10);
   await User.findOrCreate({
     where: { email: "viet113059@gmail.com" },
-    defaults: { name: "Admin User", password: adminPass, roleId: adminRole.id },
+    defaults: { name: "Admin User", password: adminPass, role_id: adminRole.id },
   });
 
   const staffPass = await bcrypt.hash("123456", 10);
   await User.findOrCreate({
     where: { email: "vietkun2k4@gmail.com" },
-    defaults: { name: "Employee User", password: staffPass, roleId: staffRole.id },
+    defaults: { name: "Employee User", password: staffPass, role_id: staffRole.id },
   });
 
   console.log("Seeding done ✅");
