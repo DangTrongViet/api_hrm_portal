@@ -23,7 +23,8 @@
     "@helper": "dist/helper",
     "@service": "dist/service",
     "@controller": "dist/controller",
-    "@socket": "dist/socket"
+    "@socket": "dist/socket",
+     "@validation": "dist/validation" 
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
