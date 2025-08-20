@@ -50,10 +50,17 @@ class AuthController {
     next: NextFunction
   ): Promise<Response | void> {
     try {
+      // Nếu bạn đang bảo vệ /me bằng cookie 'token', thì xóa cookie này:
+      const feOrigin = (process.env.APP_ORIGIN || "http://localhost:5173")
+        .split(",")[0]
+        .trim();
+      const isLocal = /^https?:\/\/localhost(?::\d+)?$/.test(feOrigin);
+
       res.clearCookie("token", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        sameSite: isLocal ? "lax" : "none",
+        secure: isLocal ? false : true,
+        path: "/", // phải giống lúc set cookie
       });
       return res
         .status(200)
