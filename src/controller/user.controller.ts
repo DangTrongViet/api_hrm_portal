@@ -1,7 +1,7 @@
-'use-strict';
-import { Request, Response, NextFunction } from 'express';
-import 'dotenv/config';
-import UserService from '@service/user.service';
+"use-strict";
+import { Request, Response, NextFunction } from "express";
+import "dotenv/config";
+import UserService from "@service/user.service";
 
 class UserController {
   //[assign role]
@@ -9,11 +9,11 @@ class UserController {
     try {
       // ✅ lấy đúng id dạng number
       const userId = Number(req.params.id);
-      if (!userId) return res.status(400).json({ message: 'Thiếu user id' });
+      if (!userId) return res.status(400).json({ message: "Thiếu user id" });
 
       const { roleName, roleId } = req.body ?? {};
       if (!roleName && !roleId) {
-        return res.status(400).json({ message: 'Thiếu roleName hoặc roleId' });
+        return res.status(400).json({ message: "Thiếu roleName hoặc roleId" });
       }
 
       // ✅ gọi service với object đúng schema
@@ -24,7 +24,7 @@ class UserController {
       });
 
       return res.json({
-        message: 'Đã gán role cho user',
+        message: "Đã gán role cho user",
         userId,
         role: assignedName,
       });
@@ -61,7 +61,7 @@ class UserController {
       if (!name || !email || !roleNum) {
         return res
           .status(400)
-          .json({ message: 'Thiếu name, email hoặc role_id/roleId' });
+          .json({ message: "Thiếu name, email hoặc role_id/roleId" });
       }
 
       const result = await UserService.adminCreateUser({
@@ -89,7 +89,7 @@ class UserController {
   ) {
     try {
       const id = Number(req.params.id);
-      if (!id) return res.status(400).json({ message: 'Thiếu id' });
+      if (!id) return res.status(400).json({ message: "Thiếu id" });
 
       const data = await UserService.getUserForAdmin(id);
 
@@ -130,7 +130,7 @@ class UserController {
       if (!token || !newPassword) {
         return res
           .status(400)
-          .json({ message: 'Thiếu token hoặc newPassword' });
+          .json({ message: "Thiếu token hoặc newPassword" });
       }
       const ok = await UserService.activateByInvite(
         String(token),
@@ -146,7 +146,7 @@ class UserController {
   static async resendInvite(req: Request, res: Response, next: NextFunction) {
     try {
       const id = Number(req.params.id);
-      if (!id) return res.status(400).json({ message: 'Thiếu id' });
+      if (!id) return res.status(400).json({ message: "Thiếu id" });
 
       const result = await UserService.resendInvite(id);
       return res.json(result);
@@ -169,7 +169,7 @@ class UserController {
     try {
       // tuỳ middleware của bạn: có thể là req.userId hoặc req.user.id
       const uid = Number((req as any).userId ?? (req as any).user?.id);
-      if (!uid) return res.status(401).json({ message: 'Unauthenticated' });
+      if (!uid) return res.status(401).json({ message: "Unauthenticated" });
 
       const data = await UserService.getSelf(uid);
       return res.json(data);
@@ -181,7 +181,7 @@ class UserController {
   static async updateMe(req: Request, res: Response, next: NextFunction) {
     try {
       const uid = Number((req as any).userId ?? (req as any).user?.id);
-      if (!uid) return res.status(401).json({ message: 'Unauthenticated' });
+      if (!uid) return res.status(401).json({ message: "Unauthenticated" });
 
       const { name, email, phoneNumber, address, birthDate } = req.body || {};
       const data = await UserService.updateSelf(uid, {
@@ -196,6 +196,80 @@ class UserController {
       next(err);
     }
   }
-}
 
+  // [PATCH] /admin/users/:id  (admin sửa thông tin user)
+  static async adminUpdateUser(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const id = Number(req.params.id);
+      if (!id) return res.status(400).json({ message: "Thiếu id" });
+
+      const {
+        name,
+        email,
+        phoneNumber,
+        address,
+        birthDate,
+        status,
+        role_id,
+        roleId,
+        mustChangePassword,
+        isVerified,
+        password,
+      } = (req.body ?? {}) as any;
+
+      const updatedBy =
+        Number((req as any).userId ?? (req as any).user?.id) || null;
+
+      const data = await UserService.adminUpdateUser(id, {
+        name,
+        email,
+        phoneNumber,
+        address,
+        birthDate,
+        status,
+        role_id:
+          role_id != null
+            ? Number(role_id)
+            : roleId != null
+              ? Number(roleId)
+              : undefined,
+        mustChangePassword,
+        isVerified,
+        password,
+        updatedBy,
+      });
+
+      return res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // [PATCH] /admin/users/:id/verify  { isVerified: boolean }
+  static async setVerified(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = Number(req.params.id);
+      if (!id) return res.status(400).json({ message: "Thiếu id" });
+
+      const { isVerified } = req.body ?? {};
+      if (typeof isVerified !== "boolean") {
+        return res
+          .status(400)
+          .json({ message: "Thiếu hoặc sai kiểu isVerified" });
+      }
+
+      const result = await UserService.setVerified(id, Boolean(isVerified));
+      return res.json({
+        message: "Cập nhật trạng thái xác minh thành công",
+        ...result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+}
 export default UserController;

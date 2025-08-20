@@ -25,7 +25,7 @@ class AuthService {
 
     // Lấy user + password + role + permissions
     const user = await User.findOne({
-      where: { email: emailNorm, status: 'active' },
+      where: { email: emailNorm, status: 'active', isVerified: true },
       attributes: [
         'id',
         'name',

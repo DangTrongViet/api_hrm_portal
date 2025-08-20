@@ -45,7 +45,7 @@ export default async function authMiddleware(
 
     // Lấy user còn active + permissions
     const user = await User.findOne({
-      where: { id: userId, status: 'active' },
+      where: { id: userId, status: 'active', isVerified: true },
       attributes: ['id', 'role_id', 'status'],
       include: [
         {

@@ -20,6 +20,20 @@ type CreateUserInput = {
   initialPassword?: string; // (tuỳ chọn) admin tự đặt
 };
 
+type AdminUpdateUserInput = Partial<{
+  name: string;
+  email: string;
+  birthDate: string | Date | null;
+  status: 'active' | 'inactive';
+  phoneNumber: string | null;
+  address: string | null;
+  role_id: number;
+  mustChangePassword: boolean;
+  isVerified: boolean;
+  password: string;           // nếu đổi password, hook @BeforeUpdate sẽ hash
+  updatedBy: number | null;
+}>;
+
 type CreateUserResult =
   | { id: number; email: string; sent: true }
   | { id: number; email: string; tempPassword: string }
@@ -496,5 +510,144 @@ export default class UserService {
 
     // trả về giống getSelf để FE dùng lại ngay
     return this.getSelf(user.id);
+  }
+
+   static async adminUpdateUser(id: number, patch: AdminUpdateUserInput) {
+    const user = await User.findByPk(id);
+    if (!user) throw new NotFoundError('User không tồn tại');
+
+    const updates: any = {};
+
+    if (patch.name !== undefined) {
+      const n = String(patch.name).trim();
+      if (n.length < 2) {
+        const err: any = new Error('Tên tối thiểu 2 ký tự');
+        err.status = 400;
+        throw err;
+      }
+      updates.name = n;
+    }
+
+    if (patch.email !== undefined) {
+      const e = String(patch.email).trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(e)) {
+        const err: any = new Error('Email không hợp lệ');
+        err.status = 400;
+        throw err;
+      }
+      if (e !== user.email) {
+        const dup = await User.count({
+          where: { email: e, id: { [Op.ne]: id } },
+        });
+        if (dup) {
+          const err: any = new Error('Email đã được sử dụng');
+          err.status = 409;
+          throw err;
+        }
+      }
+      updates.email = e;
+    }
+
+    if (patch.phoneNumber !== undefined) {
+      updates.phoneNumber = patch.phoneNumber?.toString().trim() || null;
+    }
+    if (patch.address !== undefined) {
+      const a = patch.address == null ? '' : String(patch.address).trim();
+      if (a && a.length < 2) {
+        const err: any = new Error('Địa chỉ tối thiểu 2 ký tự');
+        err.status = 400;
+        throw err;
+      }
+      updates.address = a || null;
+    }
+
+    if (patch.birthDate !== undefined) {
+      if (!patch.birthDate) {
+        updates.birthDate = null;
+      } else {
+        const d = new Date(patch.birthDate);
+        if (Number.isNaN(d.getTime())) {
+          const err: any = new Error('Ngày sinh không hợp lệ');
+          err.status = 400;
+          throw err;
+        }
+        updates.birthDate = d;
+      }
+    }
+
+    if (patch.status !== undefined) {
+      if (!['active', 'inactive'].includes(patch.status)) {
+        const err: any = new Error('Trạng thái không hợp lệ');
+        err.status = 400;
+        throw err;
+      }
+      updates.status = patch.status;
+    }
+
+    if (patch.role_id !== undefined) {
+      const role = await Role.findByPk(Number(patch.role_id));
+      if (!role) throw new NotFoundError('Role không tồn tại');
+      updates.role_id = role.id;
+    }
+
+    if (patch.mustChangePassword !== undefined) {
+      updates.mustChangePassword = Boolean(patch.mustChangePassword);
+    }
+
+    if (patch.password !== undefined) {
+      const pw = String(patch.password);
+      if (pw.length < 8) {
+        const err: any = new Error('Mật khẩu tối thiểu 8 ký tự');
+        err.status = 400;
+        throw err;
+      }
+      updates.password = pw; // hook hash ở @BeforeUpdate
+    }
+
+    // isVerified: có thể đi kèm cleanup token/otp khi set true
+    if (patch.isVerified !== undefined) {
+      updates.isVerified = Boolean(patch.isVerified);
+      if (updates.isVerified === true) {
+        updates.otpCode = null;
+        updates.otpExpires = null;
+        updates.inviteToken = null;
+        updates.inviteExpires = null;
+        updates.mustChangePassword = false;
+      }
+    }
+
+    if (patch.updatedBy !== undefined) {
+      updates.updatedBy = patch.updatedBy;
+    }
+
+    await user.update(updates);
+
+    // trả về cùng định dạng với getUserForAdmin để FE dùng thống nhất
+    return this.getUserForAdmin(user.id);
+  }
+
+  /** Đặt isVerified = true/false nhanh (và dọn OTP/Invite khi true) */
+  static async setVerified(id: number, value: boolean) {
+    const t = await User.sequelize!.transaction();
+    try {
+      const user = await User.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+      if (!user) throw new NotFoundError('User không tồn tại');
+
+      const patch: any = { isVerified: Boolean(value) };
+      if (patch.isVerified) {
+        patch.otpCode = null;
+        patch.otpExpires = null;
+        patch.inviteToken = null;
+        patch.inviteExpires = null;
+        patch.mustChangePassword = false;
+      }
+
+      await user.update(patch, { transaction: t });
+      await t.commit();
+      return { id: user.id, isVerified: user.isVerified };
+    } catch (e) {
+      await t.rollback();
+      throw e;
+    }
   }
 }
