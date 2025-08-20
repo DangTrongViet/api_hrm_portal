@@ -1,4 +1,4 @@
-import md5 from 'md5';
+
 import { Role, User, Permission } from '@models';
 import { generateToken, generateTokenVerify } from '@helper/generate';
 import { NotFoundError, UnauthorizedError, sendMail } from '@helper';
@@ -219,36 +219,34 @@ class AuthService {
     return { ok: true };
   }
 
-  static async changePassword(
-    userId: number,
-    oldPassword: string,
-    newPassword: string,
-    confirmPassword: string
-  ) {
-    const user = await User.findOne({
-      where: {
-        id: userId,
-        status: 'active',
-      },
-    });
-    if (!user) {
-      throw new NotFoundError('Người dùng không tồn tại');
-    }
 
-    if (newPassword !== confirmPassword) {
-      throw new UnauthorizedError('Xác nhận mật khẩu không chính xác');
-    }
+static async changePassword(
+  userId: number,
+  oldPassword: string,
+  newPassword: string,
+  confirmPassword: string
+) {
+  const user = await User.findOne({
+    where: { id: userId, status: 'active' },
+  });
 
-    const isMatch = md5(oldPassword) === user.password;
-    if (!isMatch) {
-      throw new UnauthorizedError('Mật khẩu cũ không chính xác');
-    }
-    user.password = md5(newPassword);
+  if (!user) throw new NotFoundError('Người dùng không tồn tại');
+  if (newPassword !== confirmPassword)
+    throw new UnauthorizedError('Xác nhận mật khẩu không chính xác');
 
-    await user.save();
+  // So sánh mật khẩu cũ
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) throw new UnauthorizedError('Mật khẩu cũ không chính xác');
 
-    return { message: 'Đổi mật khẩu thành công' };
-  }
+  // Hash mật khẩu mới
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
+
+  await user.save();
+
+  return { message: 'Đổi mật khẩu thành công' };
+}
+
 
   static async sendVerify(email: string) {
     // Tìm user
