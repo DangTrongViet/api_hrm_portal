@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import 'dotenv/config';
 import RoleService from '@service/role.service';
 import { RolesDeptQuerySchema } from './../validation/roles.validation';
-import { ApiResponse } from 'helper';
+import { ApiResponse } from '@helper';
 
 class RoleController {
   static async list(req: Request, res: Response, next: NextFunction) {
