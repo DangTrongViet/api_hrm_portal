@@ -1,3 +1,5 @@
 import { validatorLogin } from './auth.validation';
-
-export { validatorLogin };
+import { validateRequest } from './validate.request';
+export { validatorLogin,
+    validateRequest
+ };

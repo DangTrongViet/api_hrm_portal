@@ -1,8 +1,8 @@
 import * as express from 'express';
 const router = express.Router();
 import { AuthController } from '@controller';
-import { validatorLogin } from '@validation';
 import {
+  validatorLogin,
   validatorChangePassword,
   validatorResetPassword,
 } from '@validation/auth.validation';
