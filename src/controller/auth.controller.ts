@@ -1,8 +1,8 @@
-'use-strict';
-import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '@service';
-import { ApiResponse } from '@helper';
-import 'dotenv/config';
+"use-strict";
+import { Request, Response, NextFunction } from "express";
+import { AuthService } from "@service";
+import { ApiResponse } from "@helper";
+import "dotenv/config";
 class AuthController {
   //[login]
   static async login(req: Request, res: Response, next: NextFunction) {
@@ -14,21 +14,28 @@ class AuthController {
         password
       );
 
-      const isProd = process.env.NODE_ENV === 'production';
-      res.cookie('token', tokenUser, {
+      // ✅ Chọn chế độ cookie theo origin FE
+      const feOrigin = (process.env.APP_ORIGIN || "http://localhost:5173")
+        .split(",")[0]
+        .trim();
+      const isLocal = /^https?:\/\/localhost(?::\d+)?$/.test(feOrigin);
+
+      res.cookie("token", tokenUser, {
         httpOnly: true,
-        sameSite: isProd ? 'none' : 'lax',
-        secure: isProd, // true nếu deploy HTTPS
+        // ✅ Cross-site cần None + Secure; local dev (localhost) dùng Lax + không Secure
+        sameSite: isLocal ? "lax" : "none",
+        secure: isLocal ? false : true,
+        path: "/", // ✅ phải là "/" để mọi /api/* đều nhận cookie
         maxAge: 24 * 60 * 60 * 1000,
       });
 
       return res.json({
-        message: 'Đăng nhập thành công',
+        message: "Đăng nhập thành công",
         user: {
           id: user.id,
           email: user.email,
-          full_name: user.name,
-          permissionNames: permissionNames,
+          full_name: user.name, // FE đang đọc full_name
+          permissionNames,
         },
       });
     } catch (error: any) {
@@ -43,14 +50,14 @@ class AuthController {
     next: NextFunction
   ): Promise<Response | void> {
     try {
-      res.clearCookie('token', {
+      res.clearCookie("token", {
         httpOnly: true,
         secure: false,
-        sameSite: 'lax',
+        sameSite: "lax",
       });
       return res
         .status(200)
-        .json(ApiResponse.success(null, 'Đăng xuất thành công'));
+        .json(ApiResponse.success(null, "Đăng xuất thành công"));
     } catch (error) {
       next(error);
     }
@@ -64,7 +71,7 @@ class AuthController {
       return res
         .status(200)
         .json(
-          ApiResponse.success(data, 'Gửi email đặt lại mật khẩu thành công')
+          ApiResponse.success(data, "Gửi email đặt lại mật khẩu thành công")
         );
     } catch (error) {
       next(error);
@@ -84,7 +91,7 @@ class AuthController {
       );
       return res
         .status(200)
-        .json(ApiResponse.success(data, 'Đổi mật khẩu thành công'));
+        .json(ApiResponse.success(data, "Đổi mật khẩu thành công"));
     } catch (error) {
       next(error);
     }
@@ -97,7 +104,7 @@ class AuthController {
       return res
         .status(200)
         .json(
-          ApiResponse.success(data, 'Gửi Url xác minh tài khoản thành công!')
+          ApiResponse.success(data, "Gửi Url xác minh tài khoản thành công!")
         );
     } catch (error) {
       next(error);
@@ -110,7 +117,7 @@ class AuthController {
       const data = await AuthService.verify(tokenQuery);
       return res
         .status(200)
-        .json(ApiResponse.success(data, 'Tài khoản đã được xác minh!'));
+        .json(ApiResponse.success(data, "Tài khoản đã được xác minh!"));
     } catch (error) {
       next(error);
     }
@@ -126,7 +133,7 @@ class AuthController {
       });
       return res
         .status(200)
-        .json(ApiResponse.success(data, 'Đổi mật khẩu thành công'));
+        .json(ApiResponse.success(data, "Đổi mật khẩu thành công"));
     } catch (error) {
       next(error);
     }

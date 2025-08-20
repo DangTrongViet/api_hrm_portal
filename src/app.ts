@@ -11,35 +11,44 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
-// 🟢 BẮT BUỘC trên Render/Heroku → cookie secure hoạt động
+// ✅ BẮT BUỘC khi chạy sau proxy (Render/Heroku) để cookie Secure hoạt động
 app.set("trust proxy", 1);
 
-// --- Middleware cơ bản
+// --- Body + Cookie
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// --- CORS
-const FE_ORIGIN = process.env.APP_ORIGIN || "http://localhost:5173";
+// --- CORS (hỗ trợ nhiều origin, cho credentials)
+const FE_ORIGINS = (process.env.APP_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const corsOptions: cors.CorsOptions = {
-  origin: FE_ORIGIN,
+  origin(origin, cb) {
+    // Cho phép request không có Origin (Postman) và các FE hợp lệ
+    if (!origin || FE_ORIGINS.includes(origin)) return cb(null, true);
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // handle preflight
+app.options("*", cors(corsOptions)); // preflight
 
 // Route test
 app.get("/", (_req: Request, res: Response) => res.send("OK"));
 
-// --- Kết nối DB
+// --- DB
 connectDatabase();
 
-// --- Routes
+// --- Routes (đảm bảo các route /api/* được mount trong route(app))
 route(app);
 
-// --- Middleware lỗi cuối cùng
+// --- Error handler cuối
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   errorMiddleware(err, req, res, next);
 });
