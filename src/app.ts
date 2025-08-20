@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(body_parser.json({ limit: '50mb' }));
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.APP_ORIGIN ,
+  origin: process.env.APP_ORIGIN || 'http://localhost:5173' ,
   credentials: true,
 }));
 // Route test
